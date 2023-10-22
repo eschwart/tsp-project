@@ -1,31 +1,36 @@
-from discord import Intents
-from discord.ext import commands
-from os import environ
+from data import *
+from bot import *
 
+# retrieve bot env token
+token = get_token()
+if token == None:
+    exit("Missing `TOKEN` variable")
 
-intents = Intents.default()
-intents.message_content = True
-bot = commands.Bot(command_prefix='s.', intents=intents)
+# instantiate `Bot`
+bot = init_bot()
 
-
-class User():
-    def __init__(calories: int, height: int, weight: int):
-        self.calories = calories,
-        self.height = height,
-        self.weight = weight
-
-
-user_data = {}
 
 @bot.command()
-async def ping(ctx, arg1, arg2):
+async def set_height(ctx, arg):
+    pass
+
+@bot.command()
+async def set_weight(ctx, arg):
+    pass
+
+@bot.command()
+async def add_food(ctx, arg):
+    pass
+
+@bot.command()
+async def add_workout(ctx, *, args):
+    pass
+
+
+# debugging purposes
+@bot.command()
+async def ping(ctx):
     await ctx.send('pong')
 
 
-@bot.command()
-async def track(ctx, arg):
-    calories_intake[ctx.author] = int(arg)
-    await ctx.send("Done")
-
-
-bot.run(environ["TOKEN"])
+bot.run(token)
