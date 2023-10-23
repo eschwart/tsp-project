@@ -36,7 +36,6 @@ async def add_food(ctx, arg):
 async def add_workout(ctx, *, args):
     pass
 
-
 # debugging purposes
 @bot.command()
 async def ping(ctx):
