@@ -22,6 +22,39 @@ async def validate_user(ctx: Context):
 
 
 @bot.command()
+async def info(ctx: Context):
+    """Send user information, if applicable (all attrbutes are instantiated)"""
+    user: User = data.get_user(ctx.author.id)
+    height = user.get_height()
+    weight = user.get_weight()
+
+    # determine any unset attributes
+    attrs = list(
+        filter(
+            lambda attr: attr is not None,
+            [
+                "height" if height is None else None,
+                "weight" if weight is None else None,
+            ],
+        )
+    )
+    # determine if any attributes are unset
+    if None not in attrs and len(attrs) > 0:
+        # attributes as formatted strings
+        attrs_fmt: str = " and ".join(map(lambda attr: f"**{attr}**", attrs))
+        attrs_msg: str = "".join(
+            map(lambda msg: f"\n- Use the `set_{msg} <ARG>` command.", attrs)
+        )
+        # send the missing required attributes
+        await ctx.send(
+            f"The {attrs_fmt} of {ctx.author.mention} is not set.{attrs_msg}"
+        )
+    else:
+        # send user information
+        await ctx.send(f"{ctx.author.mention}:\n- Height: {height}\n- Weight: {weight}")
+
+
+@bot.command()
 async def get_height(ctx: Context):
     """Send the current height of the user"""
     user = data.get_user(ctx.author.id)
