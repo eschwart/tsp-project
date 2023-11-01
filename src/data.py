@@ -1,12 +1,19 @@
-import datetime
+class Food:
+    """The name and number of calories for a food item"""
+
+    def __init__(self, name: str, calories: int):
+        self.name = name
+        self.calories = calories
+
 
 class User:
-    """A simple class for structuring the information of a user"""
+    """The information of a user"""
 
     def __init__(self):
-        self.calories: int = 0
         self.height: int | None = None
         self.weight: int | None = None
+        self.foods: list[Food] = []
+        self.workouts: list[str] = []
 
     def get_height(self) -> int | None:
         """Return the current height of the user"""
@@ -24,20 +31,17 @@ class User:
         """Set the current weight of the user to the provided value"""
         self.weight = weight
 
-    def add_calories(self, calories: int):
+    def add_food(self, name: str, calories: int):
         """Add the provided number of calories"""
-        self.calories += calories
+        self.foods.append(name, calories)
 
     # TODO: figure out what we want to do with this
     def add_workout(self, workout: str):
-        pass
+        self.workouts.append(workout)
 
-    # TODO: implement later
-    def set_timezone(self, timezone: str):
-        pass
 
 class Database:
-    """A simple class for storing and managing users"""
+    """Stores and manages users"""
 
     def __init__(self):
         self.users: dict[int, User] = {}
