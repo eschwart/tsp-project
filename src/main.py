@@ -99,6 +99,15 @@ async def add_workout(ctx, *, args):
     """Add a workout for the user"""
     pass
 
+
+# Good base for reminders
+# TODO: have it track in real-time for direct message reminders
+# TODO: adjust for different time zones
+@bot.command()
+async def time(ctx: Context):
+    await ctx.send((str)(datetime.datetime.now().hour) + ":" + (str)(datetime.datetime.now().minute))
+
+
 # Debugging
 # This is how to send a message to a specific user
 @bot.command()

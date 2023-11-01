@@ -1,3 +1,5 @@
+import datetime
+
 class User:
     """A simple class for structuring the information of a user"""
 
@@ -30,6 +32,9 @@ class User:
     def add_workout(self, workout: str):
         pass
 
+    # TODO: implement later
+    def set_timezone(self, timezone: str):
+        pass
 
 class Database:
     """A simple class for storing and managing users"""
