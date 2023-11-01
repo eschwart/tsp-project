@@ -71,7 +71,7 @@ async def get_weight(ctx: Context):
 
 
 @bot.command()
-async def set_height(ctx, arg):
+async def set_height(ctx: Context, arg):
     """Set the current height of the user"""
     user = data.get_user(ctx.author.id)
     user.set_height(arg)
@@ -79,7 +79,7 @@ async def set_height(ctx, arg):
 
 
 @bot.command()
-async def set_weight(ctx, arg):
+async def set_weight(ctx: Context, arg):
     """Set the current weight of the user"""
     user = data.get_user(ctx.author.id)
     user.set_weight(arg)
@@ -88,16 +88,18 @@ async def set_weight(ctx, arg):
 
 # TODO: figure out how we want to structure the food/calorie system
 @bot.command()
-async def add_food(ctx, item, calories):
+async def add_food(ctx: Context, name, calories):
     """Add a food item with its number of calories for the user"""
-    pass
+    user = data.get_user(ctx.author.id)
+    user.add_food(name, calories)
 
 
-# TODO: implement `User::add_workout``
+# TODO: finish implementing `User::add_workout``
 @bot.command()
-async def add_workout(ctx, *, args):
+async def add_workout(ctx: Context, arg):
     """Add a workout for the user"""
-    pass
+    user = data.get_user(ctx.author.id)
+    user.add_workout(arg)
 
 
 # Good base for reminders
@@ -105,14 +107,19 @@ async def add_workout(ctx, *, args):
 # TODO: adjust for different time zones
 @bot.command()
 async def time(ctx: Context):
-    await ctx.send((str)(datetime.datetime.now().hour) + ":" + (str)(datetime.datetime.now().minute))
+    # timestamp of the user's message
+    cnt = ctx.message.created_at.timestamp()
+
+    # send the timestamp as a Short Time styled unix timestamp
+    await ctx.send(f"<t:{int(cnt)}:t>")
 
 
 # Debugging
-# This is how to send a message to a specific user
 @bot.command()
-async def DM(ctx: Context):
-    await ctx.message.author.send("hi")
+async def dm(ctx: Context):
+    """Send a message to the user"""
+    await ctx.message.author.send(f"Hello, {ctx.author}!")
+
 
 # Debugging
 @bot.command()
