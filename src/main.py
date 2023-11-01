@@ -1,4 +1,3 @@
-import discord
 from config import *
 from data import *
 
@@ -100,9 +99,11 @@ async def add_workout(ctx, *, args):
     """Add a workout for the user"""
     pass
 
+# Debugging
+# This is how to send a message to a specific user
 @bot.command()
-async def DMTest(ctx, user: discord.User):
-    await bot.send_message(user, "Hi")
+async def DM(ctx: Context):
+    await ctx.message.author.send("hi")
 
 # Debugging
 @bot.command()
