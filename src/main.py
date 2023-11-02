@@ -16,10 +16,10 @@ bot = init_bot()
 data = Database()
 
 
-# TODO figure out how to send a message without ctx
-# TODO have user specific messages
+# TODO send to specific users
 async def send_notification():
     last_notification_time = None
+    channel = bot.get_channel(1165773521696342058)
     while(True):
         nowLong = datetime.datetime.now()
         nowMin = str(nowLong.minute)
@@ -31,11 +31,10 @@ async def send_notification():
 
         if last_notification_time != nowShort:
                     # Define the message to be sent
-                    message = " the time is now:" + nowShort
-                    print(message)
-                    
+                    message = " the time is now: " + nowShort
+                    await channel.send(message)
                     last_notification_time = nowShort
-        await asyncio.sleep(2)
+        await asyncio.sleep(1)
 
 
 @bot.event
