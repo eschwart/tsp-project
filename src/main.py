@@ -1,14 +1,49 @@
+import asyncio
+import datetime
+
+import discord
 from config import *
 from data import *
 
 # retrieve bot env token
 token = get_token()
 
+
 # instantiate `Bot`
 bot = init_bot()
 
 # instantiate user data map
 data = Database()
+
+
+# TODO figure out how to send a message without ctx
+# TODO have user specific messages
+async def send_notification():
+    last_notification_time = None
+    while(True):
+        nowLong = datetime.datetime.now()
+        nowMin = str(nowLong.minute)
+
+        if len(nowMin) <2:
+            nowMin = "0" + nowMin
+
+        nowShort = (str)(nowLong.hour) + ":" + nowMin
+
+        if last_notification_time != nowShort:
+                    # Define the message to be sent
+                    message = " the time is now:" + nowShort
+                    print(message)
+                    
+                    last_notification_time = nowShort
+        await asyncio.sleep(2)
+
+
+@bot.event
+async def on_ready():
+    """Used for realtime tracking of time as a background task"""
+    print("Bot is online and ready.")
+    # start sending notifications
+    await send_notification()
 
 
 @bot.before_invoke
