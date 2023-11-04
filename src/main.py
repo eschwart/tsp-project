@@ -1,13 +1,13 @@
-import asyncio
-import datetime
-
-import discord
 from config import *
 from data import *
 
+from discord.ext.commands import Context, CommandError
+
+from asyncio import sleep
+from datetime import datetime
+
 # retrieve bot env token
 token = get_token()
-
 
 # instantiate `Bot`
 bot = init_bot()
@@ -16,33 +16,24 @@ bot = init_bot()
 data = Database()
 
 
-# TODO send to specific users
-async def send_notification():
-    last_notification_time = None
-    channel = bot.get_channel(1165773521696342058)
-    while(True):
-        nowLong = datetime.datetime.now()
-        nowMin = str(nowLong.minute)
+async def send_notification(user_id: int, delay: int):
+    """If they have any, DM the user with the list of the user's workouts"""
+    user = bot.get_user(user_id)
 
-        if len(nowMin) <2:
-            nowMin = "0" + nowMin
+    while True:
+        await sleep(delay)
+        workouts = data.get_user(user_id).get_workouts()
 
-        nowShort = (str)(nowLong.hour) + ":" + nowMin
-
-        if last_notification_time != nowShort:
-                    # Define the message to be sent
-                    message = " the time is now: " + nowShort
-                    await channel.send(message)
-                    last_notification_time = nowShort
-        await asyncio.sleep(1)
+        if len(workouts) > 0:
+            await user.send(str(workouts))
+        else:
+            print("\nno workouts\n")
 
 
 @bot.event
 async def on_ready():
     """Used for realtime tracking of time as a background task"""
     print("Bot is online and ready.")
-    # start sending notifications
-    await send_notification()
 
 
 @bot.before_invoke
@@ -53,6 +44,16 @@ async def validate_user(ctx: Context):
     # instantiate the user if not found
     if not data.has_user(user_id):
         data.new_user(user_id)
+
+
+@bot.command()
+async def remind(ctx: Context, arg):
+    """Set a workout reminder for the user (in seconds)"""
+    try:
+        delay = int(arg)  # seconds
+        await send_notification(ctx.author.id, delay)
+    except ValueError as e:
+        await ctx.send("Please specify with a number.")
 
 
 @bot.command()
@@ -109,7 +110,7 @@ async def set_height(ctx: Context, arg):
     """Set the current height of the user"""
     user = data.get_user(ctx.author.id)
     user.set_height(arg)
-    await ctx.send("Done")
+    await ctx.send("Done.")
 
 
 @bot.command()
@@ -117,7 +118,7 @@ async def set_weight(ctx: Context, arg):
     """Set the current weight of the user"""
     user = data.get_user(ctx.author.id)
     user.set_weight(arg)
-    await ctx.send("Done")
+    await ctx.send("Done.")
 
 
 # TODO: figure out how we want to structure the food/calorie system
@@ -125,15 +126,40 @@ async def set_weight(ctx: Context, arg):
 async def add_food(ctx: Context, name, calories):
     """Add a food item with its number of calories for the user"""
     user = data.get_user(ctx.author.id)
-    user.add_food(name, calories)
+
+    try:
+        calories = int(calories)
+        user.add_food(name, calories)
+        await ctx.send("Done.")
+    except ValueError as e:
+        await ctx.send("Please indicate a number value for calories.")
 
 
 # TODO: finish implementing `User::add_workout``
 @bot.command()
 async def add_workout(ctx: Context, arg):
-    """Add a workout for the user"""
+    """If it doesn't already exist, add the workout for the user"""
     user = data.get_user(ctx.author.id)
-    user.add_workout(arg)
+
+    if arg in user.get_workouts():
+        await ctx.send("Workout already exists.")
+    else:
+        user.add_workout(arg)
+        await ctx.send("Done.")
+
+
+@bot.command()
+async def workouts(ctx: Context):
+    """List the workouts for the user. If the cooresponding button is pressed, remove that workout"""
+    user = data.get_user(ctx.author.id)  # the user
+    workouts = user.get_workouts()  # the workouts of the user
+
+    if len(workouts) > 0:
+        # format the workouts into a numbered list
+        msg_sfx = "".join([f"\n{i}. {s}" for i, s in enumerate(workouts, 1)])
+        await ctx.send(f"Here is {ctx.author.mention}'s workout schedule:{msg_sfx}")
+    else:
+        await ctx.send(f"{ctx.author.mention} has nothing planned.")
 
 
 # Good base for reminders
