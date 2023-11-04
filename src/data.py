@@ -9,11 +9,12 @@ class Food:
 class User:
     """The information of a user"""
 
-    def __init__(self):
+    def __init__(self, user_id: int):
         self.height: int | None = None
         self.weight: int | None = None
         self.foods: list[Food] = []
         self.workouts: list[str] = []
+        self.user_id = user_id
 
     def get_height(self) -> int | None:
         """Return the current height of the user"""
@@ -35,9 +36,17 @@ class User:
         """Add the provided number of calories"""
         self.foods.append(name, calories)
 
-    # TODO: figure out what we want to do with this
     def add_workout(self, workout: str):
+        """add the provided workout to the user's list of workouts"""
         self.workouts.append(workout)
+
+    def get_workouts(self) -> list[str]:
+        """Return the workouts of the user"""
+        return self.workouts
+
+    def get_user_id(self) -> int:
+        """Return the id of the user"""
+        return self.user_id
 
 
 class Database:
@@ -48,7 +57,7 @@ class Database:
 
     def new_user(self, user_id: int):
         """Instantiate the user into the database"""
-        self.users.update({user_id: User()})
+        self.users.update({user_id: User(user_id)})
 
     def has_user(self, user_id: int) -> bool:
         """Determine if the user exists"""
