@@ -1,6 +1,6 @@
 from os import environ
 from discord import Intents
-from discord.ext.commands import Bot, Context, CommandError
+from discord.ext.commands import Bot
 
 
 TOKEN_KEYWORD: str = "TRENFREN_TOKEN"
@@ -19,7 +19,6 @@ def get_token() -> str:
 
 def init_bot():
     """Instantiate a Discord Bot with a simple default configuration"""
-    intents = Intents.default()
-    intents.message_content = True
+    intents = Intents().all()
     bot = Bot(command_prefix=COMMAND_PREFIX, intents=intents)
     return bot
