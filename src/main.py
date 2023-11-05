@@ -124,14 +124,17 @@ async def set_weight(ctx: Context, arg):
 # TODO: figure out how we want to structure the food/calorie system
 @bot.command()
 async def add_food(ctx: Context, name: str, calories):
-    """Add a food item with its number of calories for the user"""
+    """Add a food item with its number of calories for the user if it doesn't exist"""
     user = data.get_user(ctx.author.id)
 
     try:
         calories = int(calories)
         name = name.capitalize()
-        user.add_food(name, calories)
-        await ctx.send("Done.")
+        if user.check_for_food(name) == None:
+            user.add_food(name, calories)
+            await ctx.send("Done.")
+        else:
+            await ctx.send("Food has already been added to list")
     except ValueError as e:
         await ctx.send("Please indicate a number value for calories.")
 
