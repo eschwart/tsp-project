@@ -50,11 +50,11 @@ async def validate_user(ctx: Context):
 
 
 @bot.command()
-async def remind(ctx: Context, arg):
+async def remind(ctx, time: int, *, msg):
     """Set a workout reminder for the user (in seconds)"""
     try:
-        delay = int(arg)  # seconds
-        await send_notification(ctx.author.id, delay)
+        await sleep(int(time))
+        await ctx.send(f'{msg}, {ctx.author.mention}')
     except ValueError as e:
         await ctx.send("Please specify with a number.")
 
