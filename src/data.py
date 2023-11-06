@@ -41,7 +41,10 @@ class User:
 
     def add_food(self, name: str, calories: int):
         """Add the provided number of calories"""
-        self.foods.append(name, calories)
+        food = Food()
+        food.name = name
+        food.calories = calories
+        self.foods.append(food)
 
     def check_for_food(self, foodname: str) -> Food | None:
         """Returns the food object if it is in the foods array"""
