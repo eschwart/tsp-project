@@ -154,9 +154,10 @@ async def get_food(ctx: Context, name: str):
     user = data.get_user(ctx.author.id)
     try:
         name = name.capitalize()
-        Food = user.check_for_food(name)
-        if Food != None:
-            await ctx.send(Food.name + " has " + Food.calories + " calories")
+        food = user.check_for_food(name)
+
+        if food != None:
+            await ctx.send(f"{food.name} has {food.calories} calories.")
         else:
             await ctx.send("There is no food with that name")
     except ValueError as e:
