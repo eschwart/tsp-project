@@ -127,16 +127,51 @@ async def set_weight(ctx: Context, arg):
 
 # TODO: figure out how we want to structure the food/calorie system
 @bot.command()
-async def add_food(ctx: Context, name, calories):
-    """Add a food item with its number of calories for the user"""
+async def add_food(ctx: Context, name: str, calories):
+    """Add a food item with its number of calories for the user if it doesn't exist"""
     user = data.get_user(ctx.author.id)
 
     try:
         calories = int(calories)
-        user.add_food(name, calories)
-        await ctx.send("Done.")
+        name = name.capitalize()
+        if user.check_for_food(name) == None:
+            user.add_food(name, calories)
+            await ctx.send("Done.")
+        else:
+            await ctx.send("Food has already been added to list")
     except ValueError as e:
         await ctx.send("Please indicate a number value for calories.")
+
+@bot.command()
+async def get_food(ctx: Context, name: str):
+    """Return a food item with its number of calories for the user if it exists"""
+    user = data.get_user(ctx.author.id)
+    try:
+        name = name.capitalize()
+        Food = user.check_for_food(name)
+        if Food != None:
+            await ctx.send(Food.name +" has "+ Food.calories +" calories")
+        else:
+            await ctx.send("There is no food with that name")
+    except ValueError as e:
+        await ctx.send("Please indicate a name for food.")
+
+#TODO: Check if text prints correctly
+@bot.command()
+async def get_foods(ctx: Context):
+    """Return all food items with its number of calories for the user"""
+    user = data.get_user(ctx.author.id)
+    try:
+        foodstring = ""
+        Foods = user.get_foods()
+        for i in Foods:
+            foodstring += i.name + i.calories + ",\n"
+        if foodstring != "":
+            await ctx.send(foodstring)
+        else:
+            await ctx.send("No food items currently added")
+    except ValueError as e:
+        await ctx.send("Unknown error") #unless the for loop throws an error shouldn't need this.
 
 
 # TODO: finish implementing `User::add_workout``
