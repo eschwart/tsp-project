@@ -1,3 +1,8 @@
+from datetime import datetime
+
+def dt_as_str(dt: datetime) -> str:
+    return dt.strftime("%m/%d/%Y")
+
 class Food:
     """The name and number of calories for a food item"""
 
@@ -14,6 +19,7 @@ class User:
         self.weight: int | None = None
         self.foods: list[Food] = []
         self.workouts: list[str] = []
+        self.records: list[(datetime,int)] = []
         self.user_id = user_id
 
     def get_height(self) -> int | None:
@@ -28,28 +34,14 @@ class User:
         """Set the current height of the user to the provided value"""
         self.height = height
 
-    def set_weight(self, weight: int):
+    def set_weight(self, dt: datetime, weight: int):
         """Set the current weight of the user to the provided value"""
         self.weight = weight
+        self.records.append((dt,weight))
 
     def add_food(self, name: str, calories: int):
         """Add the provided number of calories"""
         self.foods.append(name, calories)
-    
-    def check_for_food(self, foodname: str) -> Food | None:
-        """Returns the food object if it is in the foods array"""
-        try:
-            for obj in self.foods:
-                if obj.name == foodname:
-                    return obj
-                
-            return None
-        except ValueError as e:
-            return None
-        
-    def get_foods(self):
-        """Returns the foods of the user"""
-        return self.foods
 
     def add_workout(self, workout: str):
         """add the provided workout to the user's list of workouts"""

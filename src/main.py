@@ -2,9 +2,12 @@ from config import *
 from data import *
 
 from discord.ext.commands import Context, CommandError
-
+from discord import File
 from asyncio import sleep
 from datetime import datetime
+import matplotlib.pyplot as plt
+import io
+
 
 # retrieve bot env token
 token = get_token()
@@ -117,60 +120,23 @@ async def set_height(ctx: Context, arg):
 async def set_weight(ctx: Context, arg):
     """Set the current weight of the user"""
     user = data.get_user(ctx.author.id)
-    user.set_weight(arg)
+    dt = ctx.message.created_at
+    user.set_weight(dt, int(arg))
     await ctx.send("Done.")
 
 
 # TODO: figure out how we want to structure the food/calorie system
 @bot.command()
-async def add_food(ctx: Context, name: str, calories):
-    """Add a food item with its number of calories for the user if it doesn't exist"""
+async def add_food(ctx: Context, name, calories):
+    """Add a food item with its number of calories for the user"""
     user = data.get_user(ctx.author.id)
 
     try:
         calories = int(calories)
-        name = name.capitalize()
-        if user.check_for_food(name) == None:
-            user.add_food(name, calories)
-            await ctx.send("Done.")
-        else:
-            await ctx.send("Food has already been added to list")
+        user.add_food(name, calories)
+        await ctx.send("Done.")
     except ValueError as e:
         await ctx.send("Please indicate a number value for calories.")
-
-
-@bot.command()
-async def get_food(ctx: Context, name: str):
-    """Return a food item with its number of calories for the user if it exists"""
-    user = data.get_user(ctx.author.id)
-
-    try:
-        name = name.capitalize()
-        Food = user.check_for_food(name)
-        if Food != None:
-            await ctx.send(Food.name +" has "+ Food.calories +" calories")
-        else:
-            await ctx.send("There is no food with that name")
-    except ValueError as e:
-        await ctx.send("Please indicate a name for food.")
-
-#TODO: Check if text prints correctly
-@bot.command()
-async def get_foods(ctx: Context):
-    """Return all food items with its number of calories for the user"""
-    user = data.get_user(ctx.author.id)
-
-    try:
-        foodstring = ""
-        Foods = user.get_foods()
-        for i in Foods:
-            foodstring += i.name + i.calories + ",\n"
-        if foodstring != "":
-            await ctx.send(foodstring)
-        else:
-            await ctx.send("No food items currently added")
-    except ValueError as e:
-        await ctx.send("Unknown error") #unless the for loop throws an error shouldn't need this.
 
 
 # TODO: finish implementing `User::add_workout``
@@ -198,7 +164,64 @@ async def workouts(ctx: Context):
         await ctx.send(f"Here is {ctx.author.mention}'s workout schedule:{msg_sfx}")
     else:
         await ctx.send(f"{ctx.author.mention} has nothing planned.")
+#bargraph of data
+# TODO: create a bar graph of users weight 
+@bot.command()
+async def graph(ctx: Context):
+    user = data.get_user(ctx.author.id)
+    userWeights = user.records
+    
+    
 
+    dates = [dt_as_str(x[0]) for x in userWeights]
+    weights = [x[1] for x in userWeights]
+
+    """MANUAL DATA ENTRY FOR DEMONSTRATION"""
+    dates.insert(0,'07/27/2003')
+    weights.insert(0,5)
+
+
+    dates.insert(1,'07/27/2010')
+    weights.insert(1,85)
+
+    weight_beginning = weights[0]
+    weight_end = weights[-1]
+   
+    print(dates, weights)
+
+    if weight_beginning < weight_end:
+        comparison_message= 'You have gained weight!'
+        print(comparison_message)
+    elif weight_beginning > weight_end:
+        comparison_message= 'You have lost weight!'
+        print(comparison_message)
+    else:
+        comparison_message='You are the same'
+        print(comparison_message)
+
+
+        
+    plt.xlabel('Date')
+    plt.ylabel('Weight(in pounds)')
+    
+    plt.bar(dates,weights)
+    plt.title(f'{ctx.author}\'s Weight Over Time - {comparison_message}')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.ylim(0, weight_end + 5)
+   
+   
+    # Save the bar graph as a PNG file
+    plt.savefig("weight_graph.png")
+    
+    plt.close()  # Close the plot to free resources
+
+    # Send the saved PNG file as an attachment on Discord
+    with open("weight_graph.png", "rb") as file:
+        file_data = io.BytesIO(file.read())
+        await ctx.send(file=File(file_data, "weight_graph.png"))
+    
+    
 
 # Good base for reminders
 # TODO: have it track in real-time for direct message reminders
@@ -210,6 +233,8 @@ async def time(ctx: Context):
 
     # send the timestamp as a Short Time styled unix timestamp
     await ctx.send(f"<t:{int(cnt)}:t>")
+
+    print(cnt.strftime("%m/%d/%Y"))
 
 
 # Debugging
