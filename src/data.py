@@ -12,6 +12,13 @@ class Food:
         self.name = name
         self.calories = calories
 
+class Workout:
+    """The PR weight, number of reps, and average rep weight for a workout"""
+    def __init__(self, name: str, Reps:int|None, RepW: int|None, PRweight: int|None):
+        self.name = name
+        self.Reps = Reps
+        self.RepW = RepW
+        self.PRweight = PRweight
 
 class User:
     """The information of a user"""
@@ -20,7 +27,7 @@ class User:
         self.height: int | None = None
         self.weight: int | None = None
         self.foods: list[Food] = []
-        self.workouts: list[str] = []
+        self.workouts: list[Workout] = []
         self.records: list[(datetime, int)] = []
         self.user_id = user_id
 
@@ -41,18 +48,18 @@ class User:
         self.weight = weight
         self.records.append((dt, weight))
 
+
     def add_food(self, name: str, calories: int):
         """Add the provided number of calories"""
         food: Food = Food(name, calories)
         self.foods.append(food)
 
-    def check_for_food(self, foodname: str) -> Food | None:
+    def get_food(self, foodname: str) -> Food | None:
         """Returns the food object if it is in the foods array"""
         try:
             for obj in self.foods:
                 if obj.name == foodname:
                     return obj
-
             return None
         except ValueError as e:
             return None
@@ -61,17 +68,34 @@ class User:
         """Returns the foods of the user"""
         return self.foods
 
-    def add_workout(self, workout: str):
+
+    def add_workout(self, name: str, RepWeight: int|None, Reps: int|None, PRweight:int|None):
         """add the provided workout to the user's list of workouts"""
+        workout = Workout(name, Reps, RepWeight, PRweight)
         self.workouts.append(workout)
 
-    def get_workouts(self) -> list[str]:
+    def get_workout(self, workoutName: str) -> Workout | None:
+        """Returns a specific workout if it exists"""
+        try:
+            for obj in self.workouts:
+                if obj.name == workoutName:
+                    return obj
+            return None
+        except ValueError as e:
+            return None
+        
+    def get_workouts(self) -> list[Workout]:
         """Return the workouts of the user"""
         return self.workouts
 
     def get_user_id(self) -> int:
         """Return the id of the user"""
         return self.user_id
+
+
+ 
+    
+    
 
 
 class Database:

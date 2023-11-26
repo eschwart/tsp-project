@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 # std imports
 from asyncio import sleep
 from io import BytesIO
+from io import StringIO
+from csv import writer, reader
 
 
 # retrieve bot env token
@@ -23,7 +25,8 @@ bot = init_bot()
 # instantiate user data map
 data = Database()
 
-
+#TODO: Broken
+@bot.command()
 async def send_notification(user_id: int, delay: int):
     """If they have any, DM the user with the list of the user's workouts"""
     user = bot.get_user(user_id)
@@ -33,7 +36,11 @@ async def send_notification(user_id: int, delay: int):
         workouts = data.get_user(user_id).get_workouts()
 
         if len(workouts) > 0:
-            await user.send(str(workouts))
+            workstring = ""
+            for i in workouts:
+                workstring += i.name + i.RepW + i.Reps + i.PRweight + ",\n"
+            if workstring != "":
+                await user.send(workstring)
         else:
             print("\nno workouts\n")
 
@@ -139,7 +146,7 @@ async def add_food(ctx: Context, name: str, calories):
     try:
         calories = int(calories)
         name = name.capitalize()
-        if user.check_for_food(name) == None:
+        if user.get_food(name) == None:
             user.add_food(name, calories)
             await ctx.send("Done.")
         else:
@@ -154,7 +161,7 @@ async def get_food(ctx: Context, name: str):
     user = data.get_user(ctx.author.id)
     try:
         name = name.capitalize()
-        food = user.check_for_food(name)
+        food = user.get_food(name)
 
         if food != None:
             await ctx.send(f"{food.name} has {food.calories} calories.")
@@ -173,7 +180,7 @@ async def get_foods(ctx: Context):
         foodstring = ""
         Foods = user.get_foods()
         for i in Foods:
-            foodstring += i.name + i.calories + ",\n"
+            foodstring += i.name + " " + str(i.calories) + ",\n"
         if foodstring != "":
             await ctx.send(foodstring)
         else:
@@ -186,27 +193,42 @@ async def get_foods(ctx: Context):
 
 # TODO: finish implementing `User::add_workout``
 @bot.command()
-async def add_workout(ctx: Context, arg):
+async def add_workout(ctx: Context, name: str, RepWeight: int|None, Reps: int|None, PRweight:int|None):
     """If it doesn't already exist, add the workout for the user"""
     user = data.get_user(ctx.author.id)
 
-    if arg in user.get_workouts():
-        await ctx.send("Workout already exists.")
-    else:
-        user.add_workout(arg)
-        await ctx.send("Done.")
+    try:
+        name = name.capitalize()
+
+        if user.get_workout(name) == None:
+            user.add_workout(name, RepWeight, Reps, PRweight)
+            await ctx.send("Done.")
+        else:
+            await ctx.send("Workout has already been added to list")
+    except ValueError as e:
+        await ctx.send("Please indicate a Name, then if wanted add RepWeight, Reps, and PR Weight for the workout.")
 
 
+#TODO comment says to remove workout if button is pressed. Needs to be done after rewrite.
 @bot.command()
 async def workouts(ctx: Context):
     """List the workouts for the user. If the cooresponding button is pressed, remove that workout"""
-    user = data.get_user(ctx.author.id)  # the user
-    workouts = user.get_workouts()  # the workouts of the user
-
+   
+    """ workouts = user.get_workouts()  # the workouts of the user
     if len(workouts) > 0:
         # format the workouts into a numbered list
         msg_sfx = "".join([f"\n{i}. {s}" for i, s in enumerate(workouts, 1)])
-        await ctx.send(f"Here is {ctx.author.mention}'s workout schedule:{msg_sfx}")
+        await ctx.send(f"Here is {ctx.author.mention}'s workout schedule:{msg_sfx}") """
+    
+    user = data.get_user(ctx.author.id)  # the user
+    workouts = user.get_workouts()
+
+    if len(workouts) > 0:
+        workstring = ""
+        for i in workouts:
+            workstring += i.name + " " + str(i.RepW) + " " + str(i.Reps) + " " + str(i.PRweight) + ",\n"
+        if workstring != "":
+            await ctx.send(workstring)
     else:
         await ctx.send(f"{ctx.author.mention} has nothing planned.")
 
@@ -258,6 +280,58 @@ async def graph(ctx: Context):
     # send the PNG file as an attachment
     await ctx.send(file=File(file_data, "weight_graph.png"))
 
+
+#TODO: csv output needs to be finished.
+@bot.command()
+async def output(ctx: Context, arg1: str, arg2: str):
+    """List the workouts for the user. If the cooresponding button is pressed, remove that workout"""
+    user = data.get_user(ctx.author.id)  # the user
+    dmuser = ctx.message.author
+    try:
+
+        if arg1.lower() == "csv":
+            temp = StringIO()
+            csvwriter = writer(temp)
+            if arg2.lower() == "workouts":
+                workouts = user.get_workouts()
+                fields = ['Name', 'Rep Weight', 'Reps', 'PR Weight']
+                csvwriter.writerow(fields)
+                for i in workouts:
+                    tempinfo = [i.name, i.RepW, i.Reps, i.PRweight]
+                    csvwriter.writerow(tempinfo)
+            elif arg2.lower() == "foods":
+                foods = user.get_foods()
+                fields = ['Name', 'Calories']
+                csvwriter.writerow(fields)
+                for i in foods:
+                    tempinfo = [i.name, i.calories]
+                    csvwriter.writerow(tempinfo)
+            else:
+                await ctx.send("Please specify workouts or foods")
+                return
+            await dmuser.send(file=File(StringIO(temp.getvalue()), "output.csv"))
+        
+        elif arg1.lower() == "text":
+            if arg2.lower() == "workouts":
+                workouts = user.get_workouts()
+                workstring = ""
+                for i in workouts:
+                    workstring += i.name + " " + str(i.RepW) + " " + str(i.Reps) + " " + str(i.PRweight) + ",\n"
+                await dmuser.send(file=File(StringIO(workstring), "output.txt"))
+            elif arg2.lower() == "foods":
+                foods = user.get_foods()
+                foodstring = ""
+                for i in foods:
+                    foodstring += i.name + " " + str(i.calories) + ",\n"
+                await dmuser.send(file=File(StringIO(foodstring), "output.txt"))
+            else:
+                await ctx.send("Please specify workouts or foods")
+                return  
+        else:
+            await ctx.send("Please specify text or csv")
+
+    except ValueError as e:
+        await ctx.send("Please input output format and workouts or foods")
 
 # Debugging
 @bot.command()
