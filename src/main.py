@@ -136,6 +136,46 @@ async def set_weight(ctx: Context, arg):
     user.set_weight(dt, int(arg))
     await ctx.send("Done.")
 
+user_cals = {}  # Dictionary to store user calories
+
+
+##TODO: make a calculator for maitnance 
+@bot.command()
+async def calc_cals(ctx: Context, arg):
+    """Set the current calorie maintenance of the user"""
+    user_id = ctx.author.id
+    user_cals[user_id] = {"maintenance": int(arg)}
+    await ctx.send("Done.")
+
+
+@bot.command()
+async def set_cals(ctx: Context, arg):
+    """Set the current calorie maintenance of the user"""
+    user_id = ctx.author.id
+    user_cals[user_id] = {"maintenance": int(arg)}
+    await ctx.send("Done.")
+
+@bot.command()
+async def eat_cals(ctx: Context, arg):
+    """Eat specified calories from the user's maintenance"""
+    user_id = ctx.author.id
+    if user_id not in user_cals:
+        await ctx.send("Please set your calorie maintenance first using !set_cals.")
+        return
+
+    user_cals[user_id]["maintenance"] -= int(arg)
+    await ctx.send("Done.")
+
+@bot.command()
+async def show_cals(ctx: Context):
+    """Show the remaining calories for the user"""
+    user_id = ctx.author.id
+    if user_id not in user_cals:
+        await ctx.send("Please set your calorie maintenance first using !set_cals.")
+        return
+
+    remaining_cals = user_cals[user_id]["maintenance"]
+    await ctx.send(f"{remaining_cals} is your remaining calories for the day")
 
 # TODO: figure out how we want to structure the food/calorie system
 @bot.command()
