@@ -1,7 +1,7 @@
 # local imports
 from config import *
 from data import *
-
+import math
 # discord imports
 from discord.ext.commands import Context, CommandError
 from discord import File
@@ -139,21 +139,60 @@ async def set_weight(ctx: Context, arg):
 user_cals = {}  # Dictionary to store user calories
 
 
-##TODO: make a calculator for maitnance 
-@bot.command()
-async def calc_cals(ctx: Context, arg):
-    """Set the current calorie maintenance of the user"""
-    user_id = ctx.author.id
-    user_cals[user_id] = {"maintenance": int(arg)}
-    await ctx.send("Done.")
 
-
+start_cals = ""
+BMR = 0
 @bot.command()
 async def set_cals(ctx: Context, arg):
     """Set the current calorie maintenance of the user"""
     user_id = ctx.author.id
     user_cals[user_id] = {"maintenance": int(arg)}
+    global start_cals
+    start_cals = user_cals[user_id]["maintenance"]
     await ctx.send("Done.")
+
+@bot.command()
+async def calc_cals(ctx: Context):
+    """In order to calculate calories we need to ask the user for various statistics"""
+    user = data.get_user(ctx.author.id)
+    await ctx.send("In order to calculate your Base Metobolic Rate (BMR) I need to ask you a series of questions")
+    "Are you male or female?"
+    Gender = await ask_question(ctx, "Are you male 'M' or Female 'F'")
+    
+
+    Height = await ask_question(ctx, "How tall are you in Feet? ie: ""4.5"" where 4 is feet and .5 is 6 inches")
+    numHeight = int(float(Height))*30.49
+    "Weight"
+    Weight = await ask_question(ctx, "How much do you weigh in lbs?")
+    numWeight= int(float(Weight))/2.2
+    "Age"
+    Age = await ask_question(ctx, "How old are you?")
+    numAge = int(float(Age))
+
+
+    if Gender == 'M':
+        global start_cals
+        start_cal= math.trunc((10*numWeight+6.25*numHeight-5*numAge+5)*1.2)
+
+        user_id = ctx.author.id
+        user_cals[user_id] = {"maintenance": int(start_cal)}
+        
+        start_cals = user_cals[user_id]["maintenance"]      
+
+        await ctx.send(f"{start_cals} is your caloric maitnence, remember to add your daily exercise using s.burn_cals in order to eat more!")
+    elif Gender == 'F':
+        
+        start_cal= math.trunc((10*numWeight+6.25*numHeight-5*numAge-161)*1.2)
+        
+        user_id = ctx.author.id
+        user_cals[user_id] = {"maintenance": int(start_cal)}
+        
+        start_cals = user_cals[user_id]["maintenance"]      
+        await ctx.send(f"{start_cals} is your caloric maitnence, remember to add your daily exercise using s.burn_cals in order to eat more!")
+    else:
+        await ctx.send("You have to pick one or the other this is a ""science based"" calculator  XD ")
+    
+        
 
 @bot.command()
 async def eat_cals(ctx: Context, arg):
@@ -167,6 +206,17 @@ async def eat_cals(ctx: Context, arg):
     await ctx.send("Done.")
 
 @bot.command()
+async def burn_cals(ctx: Context, arg):
+    """burn specified calories from the user's maintenance"""
+    user_id = ctx.author.id
+    if user_id not in user_cals:
+        await ctx.send("Please set your calorie maintenance first using !set_cals.")
+        return
+
+    user_cals[user_id]["maintenance"] += int(arg)
+    await ctx.send("Done.")
+
+@bot.command()
 async def show_cals(ctx: Context):
     """Show the remaining calories for the user"""
     user_id = ctx.author.id
@@ -175,7 +225,25 @@ async def show_cals(ctx: Context):
         return
 
     remaining_cals = user_cals[user_id]["maintenance"]
-    await ctx.send(f"{remaining_cals} is your remaining calories for the day")
+    global start_cals
+    percentage = 1-(remaining_cals/start_cals)*100
+
+    if remaining_cals > 0:
+        await ctx.send(f"You have consumed {math.trunc(percentage)}% of your daily goal, you are still in a calorie deficit on the day")
+    
+    else:
+        await ctx.send(f"You have consumed {math.trunc(percentage)}% completed with your daily goal, you are now eating in a surplus and this will lead to weight gain ")
+
+"""Helper Function for asking questions"""
+async def ask_question(ctx, question):
+    await ctx.send(question)
+    try:
+        response = await bot.wait_for('message', check=lambda message: message.author == ctx.author, timeout=60)
+        return response.content
+    except TimeoutError:
+        await ctx.send("Time's up! Please answer within 60 seconds.")
+        return None
+    
 
 # TODO: figure out how we want to structure the food/calorie system
 @bot.command()
