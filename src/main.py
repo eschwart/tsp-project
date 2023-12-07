@@ -195,15 +195,23 @@ async def calc_cals(ctx: Context):
         
 
 @bot.command()
-async def eat_cals(ctx: Context, arg):
+async def eat_cals(ctx: Context, foodname: int|str):
     """Eat specified calories from the user's maintenance"""
     user_id = ctx.author.id
     if user_id not in user_cals:
         await ctx.send("Please set your calorie maintenance first using !set_cals.")
         return
-
-    user_cals[user_id]["maintenance"] -= int(arg)
-    await ctx.send("Done.")
+    if type(foodname) == int:    
+        user_cals[user_id]["maintenance"] -= int(foodname)
+        await ctx.send("Done.")
+    else:
+        user = data.get_user(ctx.author.id)
+        food = user.get_food(foodname.capitalize())
+        if food != None:
+            user_cals[user_id]["maintenance"] -= food.calories
+            await ctx.send("Food Eaten")
+        else:
+            await ctx.send("Food is not in list")
 
 @bot.command()
 async def burn_cals(ctx: Context, arg):
@@ -226,13 +234,13 @@ async def show_cals(ctx: Context):
 
     remaining_cals = user_cals[user_id]["maintenance"]
     global start_cals
-    percentage = 1-(remaining_cals/start_cals)*100
+    percentage = (1-(remaining_cals/start_cals))*100
 
     if remaining_cals > 0:
-        await ctx.send(f"You have consumed {math.trunc(percentage)}% of your daily goal, you are still in a calorie deficit on the day")
+        await ctx.send(f"You have consumed {math.trunc(percentage)}% of your daily goal of {start_cals}, you are still in a calorie deficit on the day")
     
     else:
-        await ctx.send(f"You have consumed {math.trunc(percentage)}% completed with your daily goal, you are now eating in a surplus and this will lead to weight gain ")
+        await ctx.send(f"You have consumed {math.trunc(percentage)}% completed with your daily goal of {start_cals}, you are now eating in a surplus and this will lead to weight gain ")
 
 """Helper Function for asking questions"""
 async def ask_question(ctx, question):
