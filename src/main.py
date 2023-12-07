@@ -287,7 +287,7 @@ async def get_food(ctx: Context, name: str):
         await ctx.send("Please indicate a name for food.")
 
 
-# TODO: Check if text prints correctly
+
 @bot.command()
 async def get_foods(ctx: Context):
     """Return all food items with its number of calories for the user"""
@@ -308,6 +308,7 @@ async def get_foods(ctx: Context):
 
 @bot.command()
 async def remove_food(ctx: Context, foodName: str):
+    """Remove a food"""
     try:
         user = data.get_user(ctx.author.id)
         boolcheck = user.remove_food(foodName.capitalize())
@@ -319,7 +320,6 @@ async def remove_food(ctx: Context, foodName: str):
         await ctx.send("Please indicate a Name for the food")
 
 
-# TODO: finish implementing `User::add_workout``
 @bot.command()
 async def add_workout(ctx: Context, name: str, RepWeight: int|None, Reps: int|None, PRweight:int|None):
     """If it doesn't already exist, add the workout for the user"""
@@ -337,17 +337,10 @@ async def add_workout(ctx: Context, name: str, RepWeight: int|None, Reps: int|No
         await ctx.send("Please indicate a Name, then if wanted add RepWeight, Reps, and PR Weight for the workout.")
 
 
-#TODO comment says to remove workout if button is pressed. Needs to be done after rewrite.
+
 @bot.command()
 async def workouts(ctx: Context):
-    """List the workouts for the user. If the cooresponding button is pressed, remove that workout"""
-   
-    """ workouts = user.get_workouts()  # the workouts of the user
-    if len(workouts) > 0:
-        # format the workouts into a numbered list
-        msg_sfx = "".join([f"\n{i}. {s}" for i, s in enumerate(workouts, 1)])
-        await ctx.send(f"Here is {ctx.author.mention}'s workout schedule:{msg_sfx}") """
-    
+    """Returns a list of workouts"""
     user = data.get_user(ctx.author.id)  # the user
     workouts = user.get_workouts()
 
@@ -382,14 +375,6 @@ async def graph(ctx: Context):
 
     dates = [dt_as_str(x[0]) for x in userWeights]
     weights = [x[1] for x in userWeights]
-
-    ### manual data entry for demo ###########
-    dates.insert(0, "07/27/2003")
-    weights.insert(0, 5)
-
-    dates.insert(1, "07/27/2010")
-    weights.insert(1, 85)
-    ##########################################
 
     weight_beginning = weights[0]
     weight_end = weights[-1]
