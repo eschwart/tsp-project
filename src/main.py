@@ -298,6 +298,18 @@ async def get_foods(ctx: Context):
             "Unknown error"
         )  # unless the for loop throws an error shouldn't need this.
 
+@bot.command()
+async def remove_food(ctx: Context, foodName: str):
+    try:
+        user = data.get_user(ctx.author.id)
+        boolcheck = user.remove_food(foodName.capitalize())
+        if boolcheck == True:
+            await ctx.send("Food Removed")
+        if boolcheck == False:
+            await ctx.send("Food Not Removed")
+    except ValueError as e:
+        await ctx.send("Please indicate a Name for the food")
+
 
 # TODO: finish implementing `User::add_workout``
 @bot.command()
@@ -339,6 +351,19 @@ async def workouts(ctx: Context):
             await ctx.send(workstring)
     else:
         await ctx.send(f"{ctx.author.mention} has nothing planned.")
+
+@bot.command()
+async def remove_workout(ctx: Context, workoutName: str):
+    """Remove a workout"""
+    try:
+        user = data.get_user(ctx.author.id)
+        boolcheck = user.remove_workout(workoutName.capitalize())
+        if boolcheck == True:
+            await ctx.send("Workout Removed")
+        if boolcheck == False:
+            await ctx.send("Workout Not Removed")
+    except ValueError as e:
+        await ctx.send("Please indicate a Name for the workout")
 
 
 @bot.command()
@@ -389,7 +414,7 @@ async def graph(ctx: Context):
     await ctx.send(file=File(file_data, "weight_graph.png"))
 
 
-#TODO: csv output needs to be finished.
+
 @bot.command()
 async def output(ctx: Context, arg1: str, arg2: str):
     """List the workouts for the user. If the cooresponding button is pressed, remove that workout"""
