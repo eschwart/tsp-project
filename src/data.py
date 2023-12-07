@@ -68,6 +68,17 @@ class User:
         """Returns the foods of the user"""
         return self.foods
 
+    def remove_food(self, foodname:str) -> bool:
+        """Removes a specific food if in list"""
+        try:
+            for obj in self.foods:
+                if obj.name == foodname:
+                    self.foods.remove(obj)
+                    return True
+            return False
+        except ValueError as e:
+            return False
+        
 
     def add_workout(self, name: str, RepWeight: int|None, Reps: int|None, PRweight:int|None):
         """add the provided workout to the user's list of workouts"""
@@ -87,6 +98,18 @@ class User:
     def get_workouts(self) -> list[Workout]:
         """Return the workouts of the user"""
         return self.workouts
+    
+    def remove_workout(self, workoutName: str) -> bool:
+        """Removes a specific workout if in list"""
+        try:
+            for obj in self.workouts:
+                if obj.name == workoutName:
+                    self.workouts.remove(obj)
+                    return True
+            return False
+        except ValueError as e:
+            return False
+
 
     def get_user_id(self) -> int:
         """Return the id of the user"""
