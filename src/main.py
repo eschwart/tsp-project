@@ -1,7 +1,7 @@
 # local imports
 from config import *
 from data import *
-import math
+
 # discord imports
 from discord.ext.commands import Context, CommandError
 from discord import File
@@ -25,24 +25,18 @@ bot = init_bot()
 # instantiate user data map
 data = Database()
 
-#TODO: Broken
-@bot.command()
-async def send_notification(user_id: int, delay: int):
-    """If they have any, DM the user with the list of the user's workouts"""
-    user = bot.get_user(user_id)
 
-    while True:
-        await sleep(delay)
-        workouts = data.get_user(user_id).get_workouts()
-
-        if len(workouts) > 0:
-            workstring = ""
-            for i in workouts:
-                workstring += i.name + i.RepW + i.Reps + i.PRweight + ",\n"
-            if workstring != "":
-                await user.send(workstring)
-        else:
-            print("\nno workouts\n")
+async def ask_question(ctx: Context, question: str) -> str | None:
+    """Helper Function for asking questions"""
+    await ctx.send(question)
+    try:
+        response = await bot.wait_for(
+            "message", check=lambda message: message.author == ctx.author, timeout=60
+        )
+        return response.content
+    except TimeoutError:
+        await ctx.send("Time's up! Please answer within 60 seconds.")
+        return None
 
 
 @bot.event
@@ -62,7 +56,29 @@ async def validate_user(ctx: Context):
 
 
 @bot.command()
-async def remind(ctx, time: int, *, msg):
+async def send_notification(ctx: Context, delay):
+    """If they have any, DM the user with the list of the user's workouts"""
+    user = data.get_user(ctx.author.id)
+
+    try:
+        delay = int(delay)
+    except ValueError as e:
+        await ctx.author.send("Please provide a valid number.")
+        return
+
+    while True:
+        await sleep(delay)
+        workouts = user.get_workouts()
+
+        if len(workouts) > 0:
+            await ctx.author.send(", ".join(map(lambda w: str(w), workouts)))
+        else:
+            await ctx.author.send("You currently have no workouts.")
+            break
+
+
+@bot.command()
+async def remind(ctx: Context, time: int, *, msg):
     """Set a workout reminder for the user (in seconds)"""
     try:
         await sleep(int(time))
@@ -136,124 +152,128 @@ async def set_weight(ctx: Context, arg):
     user.set_weight(dt, int(arg))
     await ctx.send("Done.")
 
-user_cals = {}  # Dictionary to store user calories
 
-
-
-start_cals = ""
-BMR = 0
 @bot.command()
 async def set_cals(ctx: Context, arg):
     """Set the current calorie maintenance of the user"""
-    user_id = ctx.author.id
-    user_cals[user_id] = {"maintenance": int(arg)}
-    global start_cals
-    start_cals = user_cals[user_id]["maintenance"]
+
+    try:
+        arg = int(arg)
+    except ValueError as e:
+        await ctx.send("Provide a valid number.")
+        return
+
+    user = data.get_user(ctx.author.id)
+    user.set_cal_goal(arg)
+
     await ctx.send("Done.")
+
 
 @bot.command()
 async def calc_cals(ctx: Context):
     """In order to calculate calories we need to ask the user for various statistics"""
     user = data.get_user(ctx.author.id)
-    await ctx.send("In order to calculate your Base Metobolic Rate (BMR) I need to ask you a series of questions")
+    await ctx.send(
+        "In order to calculate your Base Metobolic Rate (BMR) I need to ask you a series of questions"
+    )
     "Are you male or female?"
     Gender = await ask_question(ctx, "Are you male 'M' or Female 'F'")
-    
 
-    Height = await ask_question(ctx, "How tall are you in Feet? ie: ""4.5"" where 4 is feet and .5 is 6 inches")
-    numHeight = int(float(Height))*30.49
+    Height = await ask_question(
+        ctx,
+        "How tall are you in Feet? ie: " "4.5" " where 4 is feet and .5 is 6 inches",
+    )
+    numHeight = int(float(Height)) * 30.49
     "Weight"
     Weight = await ask_question(ctx, "How much do you weigh in lbs?")
-    numWeight= int(float(Weight))/2.2
+    numWeight = int(float(Weight)) / 2.2
     "Age"
     Age = await ask_question(ctx, "How old are you?")
     numAge = int(float(Age))
 
+    if Gender == "M":
+        cals = int((10 * numWeight + 6.25 * numHeight - 5 * numAge + 5) * 1.2)
+        user.set_cal_goal(cals)
 
-    if Gender == 'M':
-        global start_cals
-        start_cal= math.trunc((10*numWeight+6.25*numHeight-5*numAge+5)*1.2)
+        await ctx.send(
+            f"{cals} is your caloric maitnence, remember to add your daily exercise using s.burn_cals in order to eat more!"
+        )
+    elif Gender == "F":
+        cals = int((10 * numWeight + 6.25 * numHeight - 5 * numAge - 161) * 1.2)
+        user.set_cal_goal(cals)
 
-        user_id = ctx.author.id
-        user_cals[user_id] = {"maintenance": int(start_cal)}
-        
-        start_cals = user_cals[user_id]["maintenance"]      
-
-        await ctx.send(f"{start_cals} is your caloric maitnence, remember to add your daily exercise using s.burn_cals in order to eat more!")
-    elif Gender == 'F':
-        
-        start_cal= math.trunc((10*numWeight+6.25*numHeight-5*numAge-161)*1.2)
-        
-        user_id = ctx.author.id
-        user_cals[user_id] = {"maintenance": int(start_cal)}
-        
-        start_cals = user_cals[user_id]["maintenance"]      
-        await ctx.send(f"{start_cals} is your caloric maitnence, remember to add your daily exercise using s.burn_cals in order to eat more!")
+        await ctx.send(
+            f"{cals} is your caloric maitnence, remember to add your daily exercise using s.burn_cals in order to eat more!"
+        )
     else:
-        await ctx.send("You have to pick one or the other this is a ""science based"" calculator  XD ")
-    
-        
+        await ctx.send(
+            "You have to pick one or the other this is a "
+            "science based"
+            " calculator  XD "
+        )
+
 
 @bot.command()
-async def eat_cals(ctx: Context, foodname: int|str):
+async def eat_cals(ctx: Context, foodname: int | str):
     """Eat specified calories from the user's maintenance"""
-    user_id = ctx.author.id
-    if user_id not in user_cals:
+    user = data.get_user(ctx.author.id)
+
+    if user.get_cal_goal() == 0:
         await ctx.send("Please set your calorie maintenance first using !set_cals.")
-        return
-    if type(foodname) == int:    
-        user_cals[user_id]["maintenance"] -= int(foodname)
+    elif type(foodname) == int:
+        user.burn_cals(int(foodname))
         await ctx.send("Done.")
     else:
-        user = data.get_user(ctx.author.id)
         food = user.get_food(foodname.capitalize())
         if food != None:
-            user_cals[user_id]["maintenance"] -= food.calories
+            user.burn_cals(food.calories)
             await ctx.send("Food Eaten")
         else:
             await ctx.send("Food is not in list")
 
+
 @bot.command()
 async def burn_cals(ctx: Context, arg):
     """burn specified calories from the user's maintenance"""
-    user_id = ctx.author.id
-    if user_id not in user_cals:
-        await ctx.send("Please set your calorie maintenance first using !set_cals.")
+    user = data.get_user(ctx.author.id)
+
+    try:
+        arg = int(arg)
+    except ValueError as e:
+        await ctx.send("Provide a valid number.")
         return
 
-    user_cals[user_id]["maintenance"] += int(arg)
-    await ctx.send("Done.")
+    if user.get_cal_goal() == 0:
+        await ctx.send("Please set your calorie maintenance first using !set_cals.")
+    else:
+        user.burn_cals(arg)
+        await ctx.send("Done.")
+
 
 @bot.command()
 async def show_cals(ctx: Context):
     """Show the remaining calories for the user"""
-    user_id = ctx.author.id
-    if user_id not in user_cals:
+    user = data.get_user(ctx.author.id)
+
+    if user.get_cal_goal() == 0:
         await ctx.send("Please set your calorie maintenance first using !set_cals.")
         return
 
-    remaining_cals = user_cals[user_id]["maintenance"]
-    global start_cals
-    percentage = (1-(remaining_cals/start_cals))*100
+    remaining_cals = user.get_cals()
+    cal_goal = user.get_cal_goal()
+    ratio = float(remaining_cals) / float(cal_goal)
 
-    if remaining_cals > 0:
-        await ctx.send(f"You have consumed {math.trunc(percentage)}% of your daily goal of {start_cals}, you are still in a calorie deficit on the day")
-    
+    if ratio < 1.0:
+        await ctx.send(
+            f"You have consumed {int(ratio * 100)}% of your daily goal of {cal_goal}, you are still in a calorie deficit on the day"
+        )
+
     else:
-        await ctx.send(f"You have consumed {math.trunc(percentage)}% completed with your daily goal of {start_cals}, you are now eating in a surplus and this will lead to weight gain ")
+        await ctx.send(
+            f"You have consumed {int(ratio * 100)}% completed with your daily goal of {cal_goal}, you are now eating in a surplus and this will lead to weight gain "
+        )
 
-"""Helper Function for asking questions"""
-async def ask_question(ctx, question):
-    await ctx.send(question)
-    try:
-        response = await bot.wait_for('message', check=lambda message: message.author == ctx.author, timeout=60)
-        return response.content
-    except TimeoutError:
-        await ctx.send("Time's up! Please answer within 60 seconds.")
-        return None
-    
 
-# TODO: figure out how we want to structure the food/calorie system
 @bot.command()
 async def add_food(ctx: Context, name: str, calories):
     """Add a food item with its number of calories for the user if it doesn't exist"""
@@ -287,7 +307,6 @@ async def get_food(ctx: Context, name: str):
         await ctx.send("Please indicate a name for food.")
 
 
-
 @bot.command()
 async def get_foods(ctx: Context):
     """Return all food items with its number of calories for the user"""
@@ -306,6 +325,7 @@ async def get_foods(ctx: Context):
             "Unknown error"
         )  # unless the for loop throws an error shouldn't need this.
 
+
 @bot.command()
 async def remove_food(ctx: Context, foodName: str):
     """Remove a food"""
@@ -321,7 +341,13 @@ async def remove_food(ctx: Context, foodName: str):
 
 
 @bot.command()
-async def add_workout(ctx: Context, name: str, RepWeight: int|None, Reps: int|None, PRweight:int|None):
+async def add_workout(
+    ctx: Context,
+    name: str,
+    RepWeight: int | None,
+    Reps: int | None,
+    PRweight: int | None,
+):
     """If it doesn't already exist, add the workout for the user"""
     user = data.get_user(ctx.author.id)
 
@@ -334,8 +360,9 @@ async def add_workout(ctx: Context, name: str, RepWeight: int|None, Reps: int|No
         else:
             await ctx.send("Workout has already been added to list")
     except ValueError as e:
-        await ctx.send("Please indicate a Name, then if wanted add RepWeight, Reps, and PR Weight for the workout.")
-
+        await ctx.send(
+            "Please indicate a Name, then if wanted add RepWeight, Reps, and PR Weight for the workout."
+        )
 
 
 @bot.command()
@@ -347,11 +374,21 @@ async def workouts(ctx: Context):
     if len(workouts) > 0:
         workstring = ""
         for i in workouts:
-            workstring += i.name + " " + str(i.RepW) + " " + str(i.Reps) + " " + str(i.PRweight) + ",\n"
+            workstring += (
+                i.name
+                + " "
+                + str(i.RepW)
+                + " "
+                + str(i.Reps)
+                + " "
+                + str(i.PRweight)
+                + ",\n"
+            )
         if workstring != "":
             await ctx.send(workstring)
     else:
         await ctx.send(f"{ctx.author.mention} has nothing planned.")
+
 
 @bot.command()
 async def remove_workout(ctx: Context, workoutName: str):
@@ -407,27 +444,25 @@ async def graph(ctx: Context):
     await ctx.send(file=File(file_data, "weight_graph.png"))
 
 
-
 @bot.command()
 async def output(ctx: Context, arg1: str, arg2: str):
     """List the workouts for the user. If the cooresponding button is pressed, remove that workout"""
     user = data.get_user(ctx.author.id)  # the user
     dmuser = ctx.message.author
     try:
-
         if arg1.lower() == "csv":
             temp = StringIO()
             csvwriter = writer(temp)
             if arg2.lower() == "workouts":
                 workouts = user.get_workouts()
-                fields = ['Name', 'Rep Weight', 'Reps', 'PR Weight']
+                fields = ["Name", "Rep Weight", "Reps", "PR Weight"]
                 csvwriter.writerow(fields)
                 for i in workouts:
                     tempinfo = [i.name, i.RepW, i.Reps, i.PRweight]
                     csvwriter.writerow(tempinfo)
             elif arg2.lower() == "foods":
                 foods = user.get_foods()
-                fields = ['Name', 'Calories']
+                fields = ["Name", "Calories"]
                 csvwriter.writerow(fields)
                 for i in foods:
                     tempinfo = [i.name, i.calories]
@@ -436,13 +471,22 @@ async def output(ctx: Context, arg1: str, arg2: str):
                 await ctx.send("Please specify workouts or foods")
                 return
             await dmuser.send(file=File(StringIO(temp.getvalue()), "output.csv"))
-        
+
         elif arg1.lower() == "text":
             if arg2.lower() == "workouts":
                 workouts = user.get_workouts()
                 workstring = ""
                 for i in workouts:
-                    workstring += i.name + " " + str(i.RepW) + " " + str(i.Reps) + " " + str(i.PRweight) + ",\n"
+                    workstring += (
+                        i.name
+                        + " "
+                        + str(i.RepW)
+                        + " "
+                        + str(i.Reps)
+                        + " "
+                        + str(i.PRweight)
+                        + ",\n"
+                    )
                 await dmuser.send(file=File(StringIO(workstring), "output.txt"))
             elif arg2.lower() == "foods":
                 foods = user.get_foods()
@@ -452,12 +496,13 @@ async def output(ctx: Context, arg1: str, arg2: str):
                 await dmuser.send(file=File(StringIO(foodstring), "output.txt"))
             else:
                 await ctx.send("Please specify workouts or foods")
-                return  
+                return
         else:
             await ctx.send("Please specify text or csv")
 
     except ValueError as e:
         await ctx.send("Please input output format and workouts or foods")
+
 
 # Debugging
 @bot.command()
@@ -467,13 +512,6 @@ async def time(ctx: Context):
 
     # send the timestamp as a Short Time styled unix timestamp
     await ctx.send(f"<t:{int(cnt)}:t>")
-
-
-# Debugging
-@bot.command()
-async def dm(ctx: Context):
-    """Send a message to the user"""
-    await ctx.message.author.send(f"Hello, {ctx.author}!")
 
 
 # Debugging

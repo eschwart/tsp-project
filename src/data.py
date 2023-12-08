@@ -12,13 +12,29 @@ class Food:
         self.name = name
         self.calories = calories
 
+
 class Workout:
     """The PR weight, number of reps, and average rep weight for a workout"""
-    def __init__(self, name: str, Reps:int|None, RepW: int|None, PRweight: int|None):
+
+    def __init__(
+        self, name: str, Reps: int | None, RepW: int | None, PRweight: int | None
+    ):
         self.name = name
         self.Reps = Reps
         self.RepW = RepW
         self.PRweight = PRweight
+
+    def __str__(self) -> str:
+        return " ".join(
+            map(
+                lambda x: str(x),
+                filter(
+                    lambda attr: attr is not None,
+                    [self.name, self.RepW, self.Reps, self.PRweight],
+                ),
+            )
+        )
+
 
 class User:
     """The information of a user"""
@@ -30,6 +46,8 @@ class User:
         self.workouts: list[Workout] = []
         self.records: list[(datetime, int)] = []
         self.user_id = user_id
+        self.cal_goal: int = 0
+        self.cals: int = 0
 
     def get_height(self) -> int | None:
         """Return the current height of the user"""
@@ -47,7 +65,6 @@ class User:
         """Set the current weight of the user to the provided value"""
         self.weight = weight
         self.records.append((dt, weight))
-
 
     def add_food(self, name: str, calories: int):
         """Add the provided number of calories"""
@@ -68,7 +85,7 @@ class User:
         """Returns the foods of the user"""
         return self.foods
 
-    def remove_food(self, foodname:str) -> bool:
+    def remove_food(self, foodname: str) -> bool:
         """Removes a specific food if in list"""
         try:
             for obj in self.foods:
@@ -78,9 +95,10 @@ class User:
             return False
         except ValueError as e:
             return False
-        
 
-    def add_workout(self, name: str, RepWeight: int|None, Reps: int|None, PRweight:int|None):
+    def add_workout(
+        self, name: str, RepWeight: int | None, Reps: int | None, PRweight: int | None
+    ):
         """add the provided workout to the user's list of workouts"""
         workout = Workout(name, Reps, RepWeight, PRweight)
         self.workouts.append(workout)
@@ -94,11 +112,11 @@ class User:
             return None
         except ValueError as e:
             return None
-        
+
     def get_workouts(self) -> list[Workout]:
         """Return the workouts of the user"""
         return self.workouts
-    
+
     def remove_workout(self, workoutName: str) -> bool:
         """Removes a specific workout if in list"""
         try:
@@ -110,15 +128,30 @@ class User:
         except ValueError as e:
             return False
 
+    def get_user_id(self) -> int:
+        """Return the id of the user"""
+        return self.user_id
 
     def get_user_id(self) -> int:
         """Return the id of the user"""
         return self.user_id
 
+    def get_cal_goal(self) -> int:
+        """Return the calorie goal of the user"""
+        return self.cal_goal
 
- 
-    
-    
+    def set_cal_goal(self, cal_goal: int) -> int:
+        """Set the calorie goal of the user"""
+        self.cal_goal = cal_goal
+        self.cals = 0
+
+    def get_cals(self) -> int:
+        """Return the calories of the user"""
+        return self.cals
+
+    def burn_cals(self, cals: int) -> int:
+        """Burn an amount of calores of the user"""
+        self.cals += cals
 
 
 class Database:
